@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# uni-app build output and local IDE state
+unpackage/
+.hbuilderx/
+
+# Common generated files
+dist/
+build/
+coverage/
+*.log
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
