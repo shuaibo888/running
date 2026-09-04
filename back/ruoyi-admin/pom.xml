@@ -87,6 +87,12 @@
             <artifactId>ruoyi-demo</artifactId>
         </dependency>
 
+        <!--  燃赛路跑业务模块  -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-running</artifactId>
+        </dependency>
+
         <!--  工作流模块  -->
         <dependency>
             <groupId>org.dromara</groupId>

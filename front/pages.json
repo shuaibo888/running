@@ -1,17 +1,161 @@
 {
 	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
 		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationStyle": "custom",
+				"backgroundColor": "#fff7ef"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "燃赛路跑"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "运动档案",
+				"navigationBarBackgroundColor": "#ff6a00",
+				"navigationBarTextStyle": "white",
+				"backgroundColor": "#f7f4f1"
+			}
+		},
+		{
+			"path": "pages/mine/mine",
+			"style": {
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true,
+				"backgroundColor": "#f5f1ed"
+			}
+		},
+		{
+			"path": "pages/location/location",
+			"style": {
+				"navigationBarTitleText": "定位与地图",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f5f3f1"
+			}
+		},
+		{
+			"path": "pages/running/running",
+			"style": {
+				"navigationStyle": "custom",
+				"backgroundColor": "#17110d"
+			}
+		},
+		{
+			"path": "pages/manual-workout/manual-workout",
+			"style": {
+				"navigationBarTitleText": "记录其他运动",
+				"navigationBarBackgroundColor": "#23140d",
+				"navigationBarTextStyle": "white",
+				"backgroundColor": "#f5efe8"
+			}
+		},
+		{
+			"path": "pages/history/history",
+			"style": {
+				"navigationBarTitleText": "运动记录",
+				"navigationBarBackgroundColor": "#f6f2ed",
+				"navigationBarTextStyle": "black",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/workout-detail/workout-detail",
+			"style": {
+				"navigationBarTitleText": "运动详情",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/routes/routes",
+			"style": {
+				"navigationBarTitleText": "文化线路",
+				"navigationBarBackgroundColor": "#f3eee8",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/route-detail/route-detail",
+			"style": {
+				"navigationBarTitleText": "线路详情",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/achievements/achievements",
+			"style": {
+				"navigationBarTitleText": "燃赛成就馆",
+				"navigationBarBackgroundColor": "#22130d",
+				"navigationBarTextStyle": "white"
+			}
+		},
+		{
+			"path": "pages/points/points",
+			"style": {
+				"navigationBarTitleText": "我的积分",
+				"navigationBarBackgroundColor": "#ff7a29",
+				"navigationBarTextStyle": "white",
+				"enablePullDownRefresh": true,
+				"backgroundColor": "#f5f1ed"
+			}
+		},
+		{
+			"path": "pages/ranking/ranking",
+			"style": {
+				"navigationBarTitleText": "燃力排行榜",
+				"navigationBarBackgroundColor": "#29160e",
+				"navigationBarTextStyle": "white"
+			}
+		},
+		{
+			"path": "pages/footprints/footprints",
+			"style": {
+				"navigationBarTitleText": "城市足迹",
+				"navigationBarBackgroundColor": "#8d2a1d",
+				"navigationBarTextStyle": "white",
+				"enablePullDownRefresh": true,
+				"backgroundColor": "#f5efe7"
 			}
 		}
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
+		"navigationBarTitleText": "燃赛路跑",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#FFF7EF"
+	},
+	"tabBar": {
+		"color": "#9c918a",
+		"selectedColor": "#ff6a00",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "white",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/running/tab_home.png",
+				"selectedIconPath": "static/running/tab_home_on.png"
+			},
+			{
+				"pagePath": "pages/routes/routes",
+				"text": "跑",
+				"iconPath": "static/running/tab_run.png",
+				"selectedIconPath": "static/running/tab_run_on.png"
+			},
+			{
+				"pagePath": "pages/mine/mine",
+				"text": "我的",
+				"iconPath": "static/running/tab_mine.png",
+				"selectedIconPath": "static/running/tab_mine_on.png"
+			}
+		]
 	},
 	"uniIdRouter": {}
 }

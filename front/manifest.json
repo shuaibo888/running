@@ -56,7 +56,15 @@
             "minified" : false
         },
         "usingComponents" : true,
-        "permission" : {}
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于展示当前位置、记录运动轨迹并识别运动城市"
+            }
+        },
+        "requiredPrivateInfos" : [
+            "getLocation",
+            "onLocationChange"
+        ]
     },
     "mp-alipay" : {
         "usingComponents" : true

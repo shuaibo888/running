@@ -350,6 +350,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!--  燃赛路跑业务模块  -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-running</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!--  工作流模块  -->
             <dependency>
                 <groupId>org.dromara</groupId>
