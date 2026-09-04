@@ -12,7 +12,7 @@
 
 ## 不可违背的约束
 
-- **Cloud 只能使用专属分支 `codex/cloud-running`。** 在确认当前分支恰好是 `codex/cloud-running` 后，Cloud 任务完成并验证通过时可以直接 `commit` 并 `push` 到同名远端分支。严禁直接修改、提交或推送 `main`，严禁强推，严禁未经负责人明确指令创建/更新 Pull Request、合并到主分支或发布；若当前分支不是专属分支，必须停止提交并报告。
+- **Cloud 的网页任务源分支只能选择 `codex/cloud-running`。** Codex Cloud 任务容器会把该源分支映射为内部临时分支 `work`，并可能不暴露 `origin`；这是合法的隔离形态，不得仅因为 `git branch --show-current` 输出 `work` 或 `git remote -v` 为空就停止开发。任务内完成验证后应在临时分支逐项审核并提交；只有当容器确实提供对应远程时才可非强制推送到 `codex/cloud-running`，否则在最终报告中交付任务内提交，由负责人稍后同步。严禁修改或推送 `main`，严禁强推，严禁未经负责人明确指令创建/更新 Pull Request、合并主分支或发布。
 - 后端只做单体应用，运行和编译统一使用 JDK 17，不拆微服务。
 - 地图统一使用腾讯地图/腾讯位置服务，轨迹坐标统一为 GCJ-02。
 - `lupao/` 是老板 AI 视觉样稿。负责人已明确授权在 `codex/cloud-running` 中提交一次冻结的参考快照；该快照只读、不是正式源码或运行依赖，正式实现仍只能落在 `front/`。

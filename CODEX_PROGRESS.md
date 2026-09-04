@@ -16,7 +16,7 @@
 - 当前正式前端不能复制 Mock 数据冒充真实数据；业务页面必须以真实接口、真实空态、加载态、错误态和权限拒绝态为准。
 - 当前本地开发阶段，数据库、Redis、微信、短信和腾讯地图相关配置直接明文写入工程配置文件，不使用 `RUNNING_*` 环境变量；部署前必须统一迁回环境变量或密钥管理并轮换已暴露的真实密钥。
 - `20260903_running_v1.sql` 至 `20260904_running_v7.sql` 已在本地执行，现均视为不可变迁移；任何后续表结构或初始化数据变化必须新增 `v8` 等顺序迁移文件，禁止回改或重复执行已执行版本。
-- Codex Cloud 只允许在专属分支 `codex/cloud-running` 工作；确认分支正确后可以直接提交并推送到该远端分支，但严禁直接改动/推送 `main`、强推、未经指令开 PR、合并主分支或发布。
+- Codex Cloud 网页任务的源分支只能选择 `codex/cloud-running`。容器内临时分支名为 `work`、不暴露 `origin` 属正常隔离机制，不得因此停止；应继续开发、验证并在任务内逐项审核后提交。只有容器确实提供远程时才可非强制推送到 `codex/cloud-running`，否则由负责人稍后同步任务内提交。严禁改动/推送 `main`、强推、未经指令开 PR、合并主分支或发布。
 
 ## 3. 当前基线
 
@@ -244,3 +244,4 @@
 | 2026-09-04 | 迁移治理 v6 | 新增且仅执行 `20260904_running_v6.sql`，建立 `run_schema_history`，登记 v1-v6 并保存 v1-v5 SHA-256，后续运行 SQL 前不再依赖口头状态 | v6 执行成功；真实 MySQL 返回 v1-v6 六条登记；v6 文件 SHA-256 为 `C4BC90970ACDF7C436D1B9939DF2C633EF965C01F8CBA2B4C68E80877678988D` | v6 是创建登记表的引导迁移，库内 checksum 留空并由库外哈希核对；下一迁移必须从 v7 开始 |
 | 2026-09-04 | Cloud 续作准备 | 在 Codex 设置中创建并验证 `燃赛路跑-running` 环境，绑定私有仓库 `shuaibo888/running`；固定 Java 17，配置 Maven 首次全模块构建、依赖维护缓存及非敏感构建变量；创建并发布专属分支 `codex/cloud-running`，Cloud 只可在该分支直接提交推送 | Codex 环境详情页显示“创建环境成功”；`git push -u origin codex/cloud-running` 成功并建立远端跟踪；根目录 `AGENTS.md` 已强制禁止 Cloud 触碰 `main`、强推、擅自开 PR/合并/发布 | 本地明文配置必须继续留在工作区、不进入 Git。Cloud 无法运行 HBuilderX/微信开发者工具；负责人已另行授权仅在云端分支提交一次 `lupao/` 冻结快照，供源码级视觉对照但不能替代真机验收，后续严禁提交该目录更新 |
 | 2026-09-04 | 阶段 1 头像上传 | 新增 `POST /app/user/profile/avatar`，校验图片扩展名、MIME、真实图片头、5MB 大小和 4096 像素边界后上传现有 OSS；v7 保存 `avatar_oss_id`，前端相册/相机选择后直接刷新档案，普通档案保存不再接受任意头像 URL | JDK 17 全 Reactor 33 模块静默编译退出码 0；v7 仅执行一次，真实 MySQL 返回 v7 登记、`avatar_oss_id bigint` 和 `(tenant_id, avatar_oss_id)` 索引；v7 SHA-256 为 `8F1278DF26FD0E09A3779A5A7003BD03AC1975B85BCE47C61A0F5665E827A92E`；HBuilderX 自动生成含 `chooseMedia`/上传逻辑的 profile 产物 | 需重启最新后端，用真实登录态及已配置 OSS 验证成功上传、非法图片拒绝和微信合法域名；下一迁移必须从 v8 开始 |
+| 2026-09-04 | Cloud 分支语义修正 | 确认网页选中 `codex/cloud-running` 后，任务容器内显示 `work` 且无 `origin` 是平台隔离机制；任务不得再因该现象误停 | 首次云任务环境使用 Java 17 完成 37 个 Maven Reactor 模块，全部 `SUCCESS`；停止前未修改、提交或推送任何业务文件 | 新任务需从已含 `lupao/` 一次性冻结快照的最新 `codex/cloud-running` 启动；正式开发仍只写入 `front/`、`back/` 和文档，严禁后续更新 `lupao/` |
