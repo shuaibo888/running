@@ -10,7 +10,7 @@
 
 - `lupao/` 是老板用 AI 生成并要求重点参考的视觉样稿，首页、线路卡片、运动中卡路里主视觉、国风路线、勋章和个人中心应尽量保持其视觉语言与信息层级。
 - `lupao/` 不是正式源码和业务规则依据；正式代码只能写入 `front/`、`back/`、`docs/` 等受版本管理的目录。
-- `lupao/` 必须持续被 Git 忽略，任何提交前都要用 `git check-ignore` 和暂存文件清单确认它未进入 Git。
+- 负责人已授权仅在 `codex/cloud-running` 提交一次 `lupao/` 冻结视觉参考快照；快照提交后禁止再修改、暂存或提交其中任何已有文件。`.gitignore` 继续阻止新增未跟踪文件，但提交前仍须检查暂存清单没有后续 `lupao/` 变更。
 - 后端为单体应用，不拆微服务；运行时使用 JDK 17。
 - 地图统一使用腾讯地图/腾讯位置服务；轨迹坐标统一采用可直接用于微信地图组件的 GCJ-02。
 - 当前正式前端不能复制 Mock 数据冒充真实数据；业务页面必须以真实接口、真实空态、加载态、错误态和权限拒绝态为准。
@@ -27,7 +27,7 @@
 - [x] 关闭当前不使用的 Monitor Admin 和 SnailJob 客户端连接，源码暂时保留。
 - [x] 新增公开连通性接口 `GET /app/ping`。
 - [x] `front/` 新增统一 API 地址与 `uni.request` 请求封装，首页可显示后端连接状态。
-- [x] `lupao/` 保存视觉原型并被 Git 忽略。
+- [x] `lupao/` 保存视觉原型；按负责人要求在云端分支提交一次只读快照，后续新增文件持续忽略、已有文件严禁再次提交变更。
 - [x] 新增单体业务模块 `ruoyi-running`，并接入 Maven 聚合与 `ruoyi-admin`。
 - [x] 新增首版用户运动档案模型、接口和建表 SQL；`v1` 已由负责人在本地 MySQL 执行并核对 13 张业务表。
 - [x] 新增微信官方手机号授权一键登录：同时提交微信身份 code 与 phoneCode，以验证手机号归并平台用户并签发 Sa-Token；尚缺真实 AppSecret/主体能力联调。
@@ -242,5 +242,5 @@
 | 2026-09-04 | 阶段 6 地区审计 | 新增且仅执行 `20260904_running_v5.sql`，在运动创建时冻结排行榜省市，查询改为使用运动快照，前端展示地区归属规则 | v5 执行成功；真实 MySQL 核对 4 个快照字段和城市/省份两条复合索引；事务测试把档案从保定改到石家庄后，旧运动仍只命中保定快照，回滚后临时数据为 0；v1-v4 SHA-256 前后不变；JDK 17 全 Reactor 33 模块 `BUILD SUCCESS` | 需重启后通过真实登录态接口验证榜单响应；Redis 榜单缓存最多延迟 60 秒 |
 | 2026-09-04 | 阶段 7 首页/我的首轮还原 | 参考 `lupao` 将开发调试首页替换为真实数据首页，新增首页/跑/我的 tabBar、真实个人中心、积分/成就/线路入口；样稿资源复制到正式静态目录但不依赖 `lupao` 路径 | HBuilderX 自动生成最新 `index`、`mine` 和 `app.json`，产物确认包含三栏 tabBar 与 mine 路由；`lupao/` 仍由 `.gitignore` 命中 | 当前电脑控制服务未向任务暴露原生应用窗口，无法截取微信模拟器进行视觉验收；素材发布权与压缩仍待确认 |
 | 2026-09-04 | 迁移治理 v6 | 新增且仅执行 `20260904_running_v6.sql`，建立 `run_schema_history`，登记 v1-v6 并保存 v1-v5 SHA-256，后续运行 SQL 前不再依赖口头状态 | v6 执行成功；真实 MySQL 返回 v1-v6 六条登记；v6 文件 SHA-256 为 `C4BC90970ACDF7C436D1B9939DF2C633EF965C01F8CBA2B4C68E80877678988D` | v6 是创建登记表的引导迁移，库内 checksum 留空并由库外哈希核对；下一迁移必须从 v7 开始 |
-| 2026-09-04 | Cloud 续作准备 | 在 Codex 设置中创建并验证 `燃赛路跑-running` 环境，绑定私有仓库 `shuaibo888/running`；固定 Java 17，配置 Maven 首次全模块构建、依赖维护缓存及非敏感构建变量；创建并发布专属分支 `codex/cloud-running`，Cloud 只可在该分支直接提交推送 | Codex 环境详情页显示“创建环境成功”；`git push -u origin codex/cloud-running` 成功并建立远端跟踪；根目录 `AGENTS.md` 已强制禁止 Cloud 触碰 `main`、强推、擅自开 PR/合并/发布 | Cloud 只能读取已经推送到专属分支的内容；本地明文配置必须继续留在工作区、不进入 Git。Cloud 无法运行 HBuilderX/微信开发者工具，也看不到被忽略的 `lupao/`；首次 Cloud 构建需在发起云端任务后观察日志 |
+| 2026-09-04 | Cloud 续作准备 | 在 Codex 设置中创建并验证 `燃赛路跑-running` 环境，绑定私有仓库 `shuaibo888/running`；固定 Java 17，配置 Maven 首次全模块构建、依赖维护缓存及非敏感构建变量；创建并发布专属分支 `codex/cloud-running`，Cloud 只可在该分支直接提交推送 | Codex 环境详情页显示“创建环境成功”；`git push -u origin codex/cloud-running` 成功并建立远端跟踪；根目录 `AGENTS.md` 已强制禁止 Cloud 触碰 `main`、强推、擅自开 PR/合并/发布 | 本地明文配置必须继续留在工作区、不进入 Git。Cloud 无法运行 HBuilderX/微信开发者工具；负责人已另行授权仅在云端分支提交一次 `lupao/` 冻结快照，供源码级视觉对照但不能替代真机验收，后续严禁提交该目录更新 |
 | 2026-09-04 | 阶段 1 头像上传 | 新增 `POST /app/user/profile/avatar`，校验图片扩展名、MIME、真实图片头、5MB 大小和 4096 像素边界后上传现有 OSS；v7 保存 `avatar_oss_id`，前端相册/相机选择后直接刷新档案，普通档案保存不再接受任意头像 URL | JDK 17 全 Reactor 33 模块静默编译退出码 0；v7 仅执行一次，真实 MySQL 返回 v7 登记、`avatar_oss_id bigint` 和 `(tenant_id, avatar_oss_id)` 索引；v7 SHA-256 为 `8F1278DF26FD0E09A3779A5A7003BD03AC1975B85BCE47C61A0F5665E827A92E`；HBuilderX 自动生成含 `chooseMedia`/上传逻辑的 profile 产物 | 需重启最新后端，用真实登录态及已配置 OSS 验证成功上传、非法图片拒绝和微信合法域名；下一迁移必须从 v8 开始 |

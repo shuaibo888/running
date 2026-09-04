@@ -1,0 +1,20 @@
+{
+  "pages": [
+    { "path": "pages/index/index", "style": { "navigationBarTitleText": "燃赛" } },
+    { "path": "pages/routes/routes", "style": { "navigationBarTitleText": "跑" } },
+    { "path": "pages/mine/mine", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/route/route", "style": { "navigationBarTitleText": "线路详情" } },
+    { "path": "pages/running/running", "style": { "navigationBarTitleText": "运动中", "navigationStyle": "custom" } },
+    { "path": "pages/achievement/achievement", "style": { "navigationBarTitleText": "我的成就" } },
+    { "path": "pages/points/points", "style": { "navigationBarTitleText": "我的积分" } }
+  ],
+  "globalStyle": { "navigationBarTextStyle": "white", "navigationBarTitleText": "燃赛", "navigationBarBackgroundColor": "#ff6a00", "backgroundColor": "#f7f7f7" },
+  "tabBar": {
+    "color": "#999999", "selectedColor": "#ff6a00", "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "static/running/tab_home.png", "selectedIconPath": "static/running/tab_home_on.png" },
+      { "pagePath": "pages/routes/routes", "text": "跑", "iconPath": "static/running/tab_run.png", "selectedIconPath": "static/running/tab_run_on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "static/running/tab_mine.png", "selectedIconPath": "static/running/tab_mine_on.png" }
+    ]
+  }
+}
