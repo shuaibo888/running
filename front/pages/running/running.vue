@@ -50,9 +50,12 @@
 			</view>
 
 			<view v-else-if="workout.status !== 'COMPLETED'" class="controls">
-				<button v-if="workout.status === 'RUNNING'" class="main-button pause-button" :loading="actionLoading" @tap="pauseCurrentWorkout">暂停</button>
-				<button v-else class="main-button resume-button" :loading="actionLoading" @tap="resumeCurrentWorkout">继续</button>
-				<button class="main-button finish-button" :loading="actionLoading" @tap="confirmFinish">结束</button>
+				<view class="control-row">
+					<button v-if="workout.status === 'RUNNING'" class="main-button pause-button" :loading="actionLoading" @tap="pauseCurrentWorkout">暂停</button>
+					<button v-else class="main-button resume-button" :loading="actionLoading" @tap="resumeCurrentWorkout">继续</button>
+					<button class="main-button finish-button" :loading="actionLoading" @tap="confirmFinish">结束</button>
+				</view>
+				<button class="abandon-button" :disabled="actionLoading" @tap="confirmAbandon">轨迹无法恢复？放弃本次记录</button>
 			</view>
 
 			<view v-else class="completed-card">
@@ -65,6 +68,7 @@
 
 <script>
 	import {
+		abandonWorkout,
 		finishWorkout,
 		getActiveWorkout,
 		pauseWorkout,
@@ -72,9 +76,9 @@
 		startWorkout,
 		uploadTrackBatch
 	} from '../../common/workout.js'
+	import { ACTIVE_WORKOUT_STORAGE_KEY } from '../../common/config.js'
 	import { getRouteDetail, getRoutes } from '../../common/engagement.js'
 
-	const LOCAL_STATE_KEY = 'running_active_workout_v1'
 	const MAX_ACCURACY_METERS = 60
 	const MAX_LOCAL_SPEED_MPS = 12
 	const MIN_MOVEMENT_METERS = 2
@@ -262,11 +266,11 @@
 				try {
 					const result = await getActiveWorkout()
 					if (!result.data) {
-						uni.removeStorageSync(LOCAL_STATE_KEY)
+						uni.removeStorageSync(ACTIVE_WORKOUT_STORAGE_KEY)
 						return
 					}
 					this.setWorkout(result.data)
-					const saved = uni.getStorageSync(LOCAL_STATE_KEY)
+					const saved = uni.getStorageSync(ACTIVE_WORKOUT_STORAGE_KEY)
 					const sameWorkout = saved && String(saved.workoutId) === String(result.data.id)
 					const serverLastSequence = Number(result.data.lastTrackSeq || 0)
 					if (sameWorkout) {
@@ -489,6 +493,32 @@
 					success: result => { if (result.confirm) this.finishCurrentWorkout() }
 				})
 			},
+			confirmAbandon() {
+				if (this.actionLoading) return
+				uni.showModal({
+					title: '放弃本次运动？',
+					content: '本地未上传轨迹会被清除，本次记录不会计入统计、线路、成就、积分或排行榜。此操作不可撤销。',
+					confirmText: '确认放弃',
+					confirmColor: '#c94735',
+					success: result => { if (result.confirm) this.abandonCurrentWorkout() }
+				})
+			},
+			async abandonCurrentWorkout() {
+				if (this.actionLoading || !this.workout) return
+				this.actionLoading = true
+				this.stopLocationTracking()
+				try {
+					await abandonWorkout(this.workout.id)
+					uni.removeStorageSync(ACTIVE_WORKOUT_STORAGE_KEY)
+					this.resetCompleted()
+					uni.showToast({ title: '本次运动已放弃', icon: 'none' })
+				} catch (error) {
+					uni.showToast({ title: error.message || '放弃运动失败', icon: 'none' })
+					if (this.workout?.status === 'RUNNING') this.startLocationTracking().catch(() => {})
+				} finally {
+					this.actionLoading = false
+				}
+			},
 			async finishCurrentWorkout() {
 				if (this.actionLoading) return
 				this.actionLoading = true
@@ -497,7 +527,7 @@
 					await this.flushPending(false)
 					const result = await finishWorkout(this.workout.id, createClientId('finish'))
 					this.setWorkout(result.data)
-					uni.removeStorageSync(LOCAL_STATE_KEY)
+					uni.removeStorageSync(ACTIVE_WORKOUT_STORAGE_KEY)
 					uni.showModal({
 						title: '本次运动已完成',
 						content: `消耗 ${Number(result.data.caloriesKcal || 0).toFixed(1)} 千卡，运动 ${(Number(result.data.distanceMeters || 0) / 1000).toFixed(2)} 公里`,
@@ -519,7 +549,7 @@
 			},
 			persistLocalState() {
 				if (!this.workout || this.workout.status === 'COMPLETED') return
-				uni.setStorageSync(LOCAL_STATE_KEY, {
+				uni.setStorageSync(ACTIVE_WORKOUT_STORAGE_KEY, {
 					workoutId: String(this.workout.id),
 					pendingPoints: this.pendingPoints,
 					routePoints: this.routePoints.slice(-500),
@@ -560,7 +590,8 @@
 	.sync-detail { display: block; margin-top: 13rpx; color: rgba(255, 255, 255, .47); font-size: 21rpx; }
 	.start-area { margin-top: 30rpx; }
 	.privacy-tip { display: block; color: rgba(255, 255, 255, .48); font-size: 21rpx; line-height: 1.55; text-align: center; }
-	.controls { display: flex; gap: 24rpx; margin-top: 32rpx; }
+	.controls { margin-top: 32rpx; }
+	.control-row { display: flex; gap: 24rpx; }
 	.main-button { margin: 0; border: 0; border-radius: 999rpx; color: #fff; font-size: 31rpx; font-weight: 750; line-height: 94rpx; }
 	.main-button::after { border: 0; }
 	.start-button { width: 100%; margin-top: 22rpx; background: linear-gradient(135deg, #ff8e3c, #ff5e00); box-shadow: 0 12rpx 32rpx rgba(255, 94, 0, .26); }
@@ -568,5 +599,7 @@
 	.pause-button { background: #fff; color: #3a2113; }
 	.resume-button { background: linear-gradient(135deg, #ff8e3c, #ff5e00); }
 	.finish-button { background: rgba(255, 255, 255, .13); }
+	.abandon-button { margin: 20rpx auto 0; border: 0; background: transparent; color: rgba(255,255,255,.48); font-size: 21rpx; line-height: 60rpx; }
+	.abandon-button::after { border: 0; }
 	.completed-card { margin-top: 28rpx; text-align: center; color: #ffd3b2; }
 </style>

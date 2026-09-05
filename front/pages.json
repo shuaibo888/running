@@ -8,6 +8,15 @@
 			}
 		},
 		{
+			"path": "pages/agreement/agreement",
+			"style": {
+				"navigationBarTitleText": "服务协议",
+				"navigationBarBackgroundColor": "#fff7ef",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#fff7ef"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "燃赛路跑"

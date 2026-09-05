@@ -66,6 +66,10 @@ export function resumeWorkout(workoutId) {
 	return request({ url: `/app/workouts/${workoutId}/resume`, method: 'POST' })
 }
 
+export function abandonWorkout(workoutId) {
+	return request({ url: `/app/workouts/${workoutId}/abandon`, method: 'POST' })
+}
+
 export function finishWorkout(workoutId, clientFinishId) {
 	return request({
 		url: `/app/workouts/${workoutId}/finish`,

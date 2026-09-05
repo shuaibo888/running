@@ -100,7 +100,9 @@
 - [x] 产出 `run_user_profile`、`run_wechat_identity`、`run_phone_identity` 首版建表 SQL，分别约束档案、微信和手机号身份唯一性。
 - [x] 在本地 `running` 数据库执行 v1-v7，并验证当前业务表、字段、索引和迁移登记。
 - [x] 增加头像选择、图片类型/尺寸/大小校验和正式对象存储上传，档案保存对象存储 ID 与正式 URL；普通档案保存不再接受客户端任意头像 URL。对象存储真实上传仍待重启后以登录用户验证。
-- [ ] 补齐正式用户协议/隐私政策页面、定位拒绝状态和真机登录失效验证。
+- [x] 新增可独立阅读和互相切换的用户协议/隐私政策页面，登录勾选与协议链接不再混为一个点击动作；研发验收文本明确手机号归并、运动估算、定位、第三方处理与用户权利边界。
+- [x] 统一处理接口和文件上传的 HTTP/业务 `401`：清除令牌及账号绑定的未上传轨迹缓存，并将并发失效响应收敛为一次提示和一次登录页跳转；重新登录后可再次正确处理失效。
+- [ ] 上线前由实际运营主体/法律人员确认主体名称、联系渠道、保存期限和未成年人规则，并实现账号注销/个人信息申请入口；定位拒绝状态和登录失效跳转的微信真机表现仍待验证。
 
 已完成代码接口：`POST /app/auth/wechat-login`、`POST /app/auth/sms-code`、`POST /app/auth/phone-login`、`POST /app/auth/logout`、`GET /app/user/login-methods`、`GET /app/user/profile`、`PUT /app/user/profile`。微信登录请求必须同时包含用途不同的 `code` 与 `phoneCode`；后端不接受客户端直接上报手机号或 openid 作为微信登录事实。微信和手机号身份标识不出现在登录响应中。上述接口仍需完成数据库迁移、真实微信/短信配置后的运行联调。
 
@@ -120,14 +122,14 @@
 
 ### 阶段 3：跑步记录核心闭环
 
-- [x] 定义并实现首版状态机：页面 `IDLE/LOCATING/RUNNING/PAUSED/FINISHING/COMPLETED`，服务端持久化 `RUNNING/PAUSED/COMPLETED/FAILED`；失败状态的运营处置仍待后续补充。
+- [x] 定义并实现首版状态机：页面 `IDLE/LOCATING/RUNNING/PAUSED/FINISHING/COMPLETED`，服务端持久化 `RUNNING/PAUSED/COMPLETED/FAILED`；增加明确二次确认的“放弃本次记录”，服务端幂等转为 `FAILED`、释放活动记录且禁止进入统计与奖励，解决损坏轨迹永久阻塞新运动的问题。
 - [x] 开始前检查定位可用性、定位精度、用户完整档案/体重和同一用户未完成记录。
 - [x] 前台持续采集 GCJ-02 定位点，客户端做采样和即时展示过滤，服务端再按精度、时间顺序、定位间隔、位移和异常速度校验。
 - [x] 实时展示时长、有效距离、平均配速和估算卡路里；批次确认和结束时以服务端结果覆盖客户端估算。
 - [x] 本地暂存轨迹、每 10 点自动批量上传、序号断点恢复、批次幂等和结束幂等代码已完成。
 - [x] 服务端复算并保存运动摘要、批次和轨迹点，结束时返回最终距离、配速和卡路里。
 
-已完成代码接口：`POST /app/workouts`、`GET /app/workouts/active`、`GET /app/workouts/{id}`、`POST /app/workouts/{id}/track-batches`、`POST /app/workouts/{id}/pause`、`POST /app/workouts/{id}/resume`、`POST /app/workouts/{id}/finish`。
+已完成代码接口：`POST /app/workouts`、`GET /app/workouts/active`、`GET /app/workouts/{id}`、`POST /app/workouts/{id}/track-batches`、`POST /app/workouts/{id}/pause`、`POST /app/workouts/{id}/resume`、`POST /app/workouts/{id}/finish`、`POST /app/workouts/{id}/abandon`。
 
 首版跑步卡路里采用 `体重(kg) × 距离(km) × 1.036`，并保存算法版本 `RUNNING_WEIGHT_DISTANCE_V1`。该数值是可解释的运动估算，不是医疗指标。客户端显示值包含尚未上传点的即时估算；服务端过滤后的结果才是最终事实。
 
@@ -141,7 +143,7 @@
 - [x] 直接从已完成运动聚合累计卡路里、距离、次数和时长，避免加载全部记录到 JVM。
 - [x] 统计最长连续运动天数、城市覆盖数，并提供近 7/30/90 个自然日的真实卡路里、距离、时长和次数趋势；已通过 MySQL 8 查询验证，登录态接口仍待业务账号联调。
 - [x] 非跑步运动采用运动类型 + 时长 + 档案体重 + MET/规则版本计算卡路里；手工记录计入个人累计、趋势和成就，首版不参与地区排行榜。
-- [ ] 所有统计支持重新计算或审计，不只保存不可解释的最终数字。
+- [x] 跑步距离、配速、跑步卡路里和按时长 MET 卡路里公式已抽为无外部依赖的可审计计算器，并覆盖正常值、边界值和坐标距离单元测试；数据库聚合统计仍直接来源于可追溯运动事实。
 
 已完成代码接口：`GET /app/workouts`、`GET /app/workouts/{id}`、`GET /app/workouts/{id}/track-points`、`GET /app/statistics/overview`。轨迹接口每次最多返回 500 个服务端判定有效的点，前端按序号继续加载；列表每页最多 50 条，统计使用数据库聚合，均避免一次性读取用户全部运动/轨迹。
 
@@ -214,7 +216,7 @@
 2. 登录后验证 `GET /app/statistics/overview`、`GET /app/statistics/trends`、`GET /app/achievements`、`GET /app/points` 和签到接口，并核对重复签到、成就/线路奖励的幂等流水。
 3. 在微信开发者工具查看新版首页、三栏导航、我的、运动记录、非跑步运动和积分页面；HBuilderX 已自动产出对应 WXML/JS/WXSS，仍需模拟器视觉验收。
 4. 用真实已完成 GPS 运动验证腾讯地图异步城市解析、失败重试、幂等和足迹聚合，再验证真机定位、弱网补传和完整跑步闭环。
-5. 登录后验证头像选择、5MB/格式/像素限制、对象存储上传和档案刷新，再继续完成首页/我的页的 `lupao` 视觉还原、隐私协议和发布准备。
+5. 登录后验证头像选择、5MB/格式/像素限制、对象存储上传和档案刷新；在微信开发者工具核对新增协议页面的滚动、双文档切换及“查看协议不会误勾选、登录必须主动勾选”，再继续逐页完成 `lupao` 视觉还原。
 
 ## 9. 进度记录
 
@@ -238,6 +240,9 @@
 | 2026-09-04 | 阶段 4/5 | 新增 7/30/90 日运动趋势、最长连续运动天数和城市覆盖统计；新增连续 3/7 天与 3/10 城成就，城市成就在足迹解析事务完成后判定；运动记录页增加真实趋势图 | JDK 17 全 Reactor 33 模块编译和打包成功；MySQL 8 事务测试得到 4 个趋势日、最长连续 3 天、2 城，回滚后临时数据为 0；HBuilderX 自动生成最新微信小程序产物；首次重启确认新路由无令牌返回 `code=401` | 修正 `ONLY_FULL_GROUP_BY` 后需在 IDEA 再次启动最新类；缺真实业务登录令牌，接口数据响应和微信模拟器视觉仍待验证；非跑步运动和正式积分未实现 |
 | 2026-09-04 | 阶段 1 缺陷修复 | 真实短信验证码已送达且校验通过；定位登录失败为框架缺少 `SysUser → SysUserVo` 运行期转换器，手机号和微信登录统一改为直接读取 `SysUser` 后签发令牌 | 异常栈精确落在 `RunPhoneAuthServiceImpl.resolveOrCreateUser`；JDK 17 全 Reactor 33 模块 `BUILD SUCCESS`；编译产物反汇编确认调用 `SysUserMapper.selectById`，身份映射关联 1 个启用中的 APP 用户 | 当前 8080 进程启动早于修复编译，需 IDEA 重启并重新获取验证码完成真实登录复验 |
 | 2026-09-04 | 阶段 4 非跑步运动 | 新增可运营运动类型、MET/时长结算、手工运动页面、历史/详情适配和排行榜公平性隔离；新增且仅执行 `20260904_running_v3.sql` | 本地 MySQL 核对 7 种规则和 7 个新/调整字段；事务测试 30 分钟健走按 60kg 结算 114.00 kcal、个人统计包含、排行榜计数为 0，回滚后临时记录为 0；HBuilderX 已生成 `manual-workout` 小程序产物 | 需登录后跑通真实接口与页面；MET 值后续应由产品/运动专业人员复核，正式积分仍未实现 |
+| 2026-09-04 | 阶段 1/7 协议与隐私 | 新增橙色品牌视觉的用户协议/隐私政策阅读页，披露手机号归并、档案、轨迹定位、算法估算、第三方处理和上线前待补事项；登录页协议名称可分别打开且不会误切换同意状态 | `pages.json`/`manifest.json` JSON 静态解析、Vue 脚本抽取语法检查及 `git diff --check` 通过 | HBuilderX/微信开发者工具尚未渲染；运营主体、联系方式、保存期限、注销/信息申请入口和法律审核仍是上线阻塞，当前文本不得冒充已通过平台审核 |
+| 2026-09-05 | 阶段 1 登录失效闭环 | 新增统一会话失效处理，普通请求与头像上传遇到 HTTP/业务 401 时同时清除令牌和当前账号未上传轨迹，并对并发 401 只提示、跳转一次；主动退出复用同一清理逻辑，登录成功重置跳转门闩 | Node 内置测试 3 项通过，覆盖账号本地数据清理、并发 401 合并和重新登录后再次失效；Vue/JS 语法检查与 `git diff --check` 通过 | 微信开发者工具及真机仍需验证 Toast、reLaunch 和运动页销毁时序；后端真实 Token 过期依赖本地运行环境 |
+| 2026-09-05 | 阶段 3 失败恢复 | 为无法继续或结束的活动运动增加放弃接口与前端二次确认入口；服务端按用户加锁校验所有权，重复放弃幂等返回，完成记录禁止放弃，失败记录释放活动唯一约束且不参与排行、统计、线路、成就或积分 | 全部 Vue 脚本与 JSON 静态检查、`git diff --check` 通过；代码路径审计确认放弃操作不发布完成事件、不调用奖励服务且不上传待处理轨迹 | Maven 仍受华为镜像依赖 403 阻塞；需本地 MySQL 验证 RUNNING/PAUSED/重复/越权/已完成五类接口场景，并在微信工具验证确认框和恢复采集时序 |
 | 2026-09-04 | 阶段 5 正式积分 | 基于 `lupao` 积分页完成积分账户、每日签到、连续签到加成、成就/线路节点奖励、业务幂等流水和真实积分页面；接入 `GET /app/points`、`POST /app/points/check-in` | 负责人确认 v4 已手工执行；数据库核对两张积分表、成就奖励值；JDK 17 全 Reactor 33 模块 `BUILD SUCCESS`；HBuilderX 自动生成 points 页面产物 | 8080 仍需重启到最新编译类后，用真实登录态验证签到及奖励流水 |
 | 2026-09-04 | 阶段 6 地区审计 | 新增且仅执行 `20260904_running_v5.sql`，在运动创建时冻结排行榜省市，查询改为使用运动快照，前端展示地区归属规则 | v5 执行成功；真实 MySQL 核对 4 个快照字段和城市/省份两条复合索引；事务测试把档案从保定改到石家庄后，旧运动仍只命中保定快照，回滚后临时数据为 0；v1-v4 SHA-256 前后不变；JDK 17 全 Reactor 33 模块 `BUILD SUCCESS` | 需重启后通过真实登录态接口验证榜单响应；Redis 榜单缓存最多延迟 60 秒 |
 | 2026-09-04 | 阶段 7 首页/我的首轮还原 | 参考 `lupao` 将开发调试首页替换为真实数据首页，新增首页/跑/我的 tabBar、真实个人中心、积分/成就/线路入口；样稿资源复制到正式静态目录但不依赖 `lupao` 路径 | HBuilderX 自动生成最新 `index`、`mine` 和 `app.json`，产物确认包含三栏 tabBar 与 mine 路由；`lupao/` 仍由 `.gitignore` 命中 | 当前电脑控制服务未向任务暴露原生应用窗口，无法截取微信模拟器进行视觉验收；素材发布权与压缩仍待确认 |
@@ -245,3 +250,4 @@
 | 2026-09-04 | Cloud 续作准备 | 在 Codex 设置中创建并验证 `燃赛路跑-running` 环境，绑定私有仓库 `shuaibo888/running`；固定 Java 17，配置 Maven 首次全模块构建、依赖维护缓存及非敏感构建变量；创建并发布专属分支 `codex/cloud-running`，Cloud 只可在该分支直接提交推送 | Codex 环境详情页显示“创建环境成功”；`git push -u origin codex/cloud-running` 成功并建立远端跟踪；根目录 `AGENTS.md` 已强制禁止 Cloud 触碰 `main`、强推、擅自开 PR/合并/发布 | 本地明文配置必须继续留在工作区、不进入 Git。Cloud 无法运行 HBuilderX/微信开发者工具；负责人已另行授权仅在云端分支提交一次 `lupao/` 冻结快照，供源码级视觉对照但不能替代真机验收，后续严禁提交该目录更新 |
 | 2026-09-04 | 阶段 1 头像上传 | 新增 `POST /app/user/profile/avatar`，校验图片扩展名、MIME、真实图片头、5MB 大小和 4096 像素边界后上传现有 OSS；v7 保存 `avatar_oss_id`，前端相册/相机选择后直接刷新档案，普通档案保存不再接受任意头像 URL | JDK 17 全 Reactor 33 模块静默编译退出码 0；v7 仅执行一次，真实 MySQL 返回 v7 登记、`avatar_oss_id bigint` 和 `(tenant_id, avatar_oss_id)` 索引；v7 SHA-256 为 `8F1278DF26FD0E09A3779A5A7003BD03AC1975B85BCE47C61A0F5665E827A92E`；HBuilderX 自动生成含 `chooseMedia`/上传逻辑的 profile 产物 | 需重启最新后端，用真实登录态及已配置 OSS 验证成功上传、非法图片拒绝和微信合法域名；下一迁移必须从 v8 开始 |
 | 2026-09-04 | Cloud 分支语义修正 | 确认网页选中 `codex/cloud-running` 后，任务容器内显示 `work` 且无 `origin` 是平台隔离机制；任务不得再因该现象误停 | 首次云任务环境使用 Java 17 完成 37 个 Maven Reactor 模块，全部 `SUCCESS`；停止前未修改、提交或推送任何业务文件 | 新任务需从已含 `lupao/` 一次性冻结快照的最新 `codex/cloud-running` 启动；正式开发仍只写入 `front/`、`back/` 和文档，严禁后续更新 `lupao/` |
+| 2026-09-04 | 阶段 4/7 结算自动化测试 | 将跑步距离、配速、跑步卡路里和 MET 卡路里公式抽为无框架依赖的可审计计算器，业务结算统一调用；新增正常值、无效输入、短距离和北京坐标距离边界测试 | `git diff --check` 通过；计算器由 JDK 17 独立编译通过；Maven 测试因 Cloud 配置的华为镜像返回 403 且公共 Central DNS 不可用而无法完成依赖解析 | 网络恢复后执行 `mvn -B -ntp -pl ruoyi-modules/ruoyi-running -am -DskipTests=false -Dtest=RunWorkoutCalculatorTest -Dsurefire.failIfNoSpecifiedTests=false test`，预期 4 个测试全部通过；随后继续补充状态机与幂等服务测试 |

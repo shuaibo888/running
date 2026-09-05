@@ -65,7 +65,12 @@
 				<view class="agreement-check" :class="{ checked: agreed }">
 					<text v-if="agreed">✓</text>
 				</view>
-				<text class="agreement-text">我已阅读并同意《用户协议》和《隐私政策》</text>
+				<view class="agreement-text">
+					<text>我已阅读并同意</text>
+					<text class="agreement-link" @tap.stop="openAgreement('terms')">《用户协议》</text>
+					<text>和</text>
+					<text class="agreement-link" @tap.stop="openAgreement('privacy')">《隐私政策》</text>
+				</view>
 			</view>
 		</view>
 
@@ -107,6 +112,9 @@
 			this.clearCountdown()
 		},
 		methods: {
+			openAgreement(type) {
+				uni.navigateTo({ url: `/pages/agreement/agreement?type=${type}` })
+			},
 			switchMode(mode) {
 				this.loginMode = mode
 			},
@@ -301,5 +309,6 @@
 	.agreement-check { display: flex; align-items: center; justify-content: center; width: 28rpx; height: 28rpx; margin-right: 10rpx; border: 2rpx solid #d6c8be; border-radius: 50%; color: #fff; font-size: 19rpx; }
 	.agreement-check.checked { border-color: #ff6a00; background: #ff6a00; }
 	.agreement-text { font-size: 21rpx; color: #94877f; }
+	.agreement-link { color: #ef6410; font-weight: 700; }
 	.footer-tip { display: block; margin-top: 30rpx; text-align: center; font-size: 21rpx; color: #b1a49b; }
 </style>
