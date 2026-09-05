@@ -3,6 +3,7 @@ import {
 	API_BASE_URL,
 	RUNNING_CLIENT_ID
 } from './config.js'
+import { expireSession } from './session.js'
 
 export function request(options) {
 	return new Promise((resolve, reject) => {
@@ -22,8 +23,9 @@ export function request(options) {
 			success(response) {
 				const body = response.data || {}
 				if (response.statusCode === 401 || body.code === 401) {
-					uni.removeStorageSync(ACCESS_TOKEN_STORAGE_KEY)
-					reject(new Error(body.msg || '登录已失效，请重新登录'))
+					const message = body.msg || '登录已失效，请重新登录'
+					expireSession(message)
+					reject(new Error(message))
 					return
 				}
 				if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -70,8 +72,9 @@ export function uploadFile(options) {
 					}
 				}
 				if (response.statusCode === 401 || body.code === 401) {
-					uni.removeStorageSync(ACCESS_TOKEN_STORAGE_KEY)
-					reject(new Error(body.msg || '登录已失效，请重新登录'))
+					const message = body.msg || '登录已失效，请重新登录'
+					expireSession(message)
+					reject(new Error(message))
 					return
 				}
 				if (response.statusCode < 200 || response.statusCode >= 300) {

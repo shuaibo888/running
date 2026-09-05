@@ -89,6 +89,11 @@ public class RunWorkoutController {
         return R.ok("运动已继续", workoutService.resume(LoginHelper.getUserId(), workoutId));
     }
 
+    @PostMapping("/{workoutId}/abandon")
+    public R<RunWorkoutVo> abandon(@PathVariable Long workoutId) {
+        return R.ok("运动已放弃", workoutService.abandon(LoginHelper.getUserId(), workoutId));
+    }
+
     @PostMapping("/{workoutId}/finish")
     public R<RunWorkoutVo> finish(@PathVariable Long workoutId,
                                    @Valid @RequestBody RunWorkoutFinishBo bo) {

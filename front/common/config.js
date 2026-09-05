@@ -3,6 +3,7 @@ const PRODUCTION_API_BASE_URL = 'https://api.example.com'
 
 export const RUNNING_CLIENT_ID = 'running-miniprogram'
 export const ACCESS_TOKEN_STORAGE_KEY = 'runningAccessToken'
+export const ACTIVE_WORKOUT_STORAGE_KEY = 'running_active_workout_v1'
 
 /**
  * 开发者工具默认访问本机；真机调试可在控制台执行：

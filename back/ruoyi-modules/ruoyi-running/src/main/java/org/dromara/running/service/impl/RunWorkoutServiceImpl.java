@@ -30,6 +30,7 @@ import org.dromara.running.service.IRunWorkoutService;
 import org.dromara.running.service.IRunAchievementService;
 import org.dromara.running.service.IRunCityFootprintService;
 import org.dromara.running.service.IRunRouteService;
+import org.dromara.running.support.RunWorkoutCalculator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,9 +59,7 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
     private static final String TRACKING_DURATION = "DURATION";
     private static final String ENABLED = "0";
     private static final String RUNNING_CALORIE_ALGORITHM = "RUNNING_WEIGHT_DISTANCE_V1";
-    private static final BigDecimal CALORIE_FACTOR = new BigDecimal("1.036");
     private static final BigDecimal ZERO_DISTANCE = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-    private static final double EARTH_RADIUS_METERS = 6_371_008.8D;
     private static final double MAX_ACCURACY_METERS = 60D;
     private static final double MAX_RUNNING_SPEED_MPS = 12D;
     private static final double MIN_MOVEMENT_METERS = 2D;
@@ -191,7 +190,7 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
         workout.setElapsedSeconds(elapsedSeconds);
         workout.setPausedSeconds(0);
         workout.setDistanceMeters(ZERO_DISTANCE);
-        workout.setCaloriesKcal(calculateMetCalories(
+        workout.setCaloriesKcal(RunWorkoutCalculator.metCalories(
             profile.getWeightKg(), sportType.getMetValue(), bo.getDurationMinutes()));
         workout.setAvgPaceSeconds(null);
         workout.setWeightKg(profile.getWeightKg());
@@ -404,7 +403,7 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
         workout.setLastTrackSeq(points.get(points.size() - 1).getSequenceNo());
         workout.setLastPointTime(newestReceivedTime);
         workout.setDistanceMeters(workout.getDistanceMeters().add(batchDistance).setScale(2, RoundingMode.HALF_UP));
-        workout.setCaloriesKcal(calculateCalories(workout.getWeightKg(), workout.getDistanceMeters()));
+        workout.setCaloriesKcal(RunWorkoutCalculator.runningCalories(workout.getWeightKg(), workout.getDistanceMeters()));
         if (workoutMapper.updateById(workout) < 1) {
             throw new ServiceException("运动轨迹汇总冲突，请重新获取运动状态后重试");
         }
@@ -445,6 +444,35 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public RunWorkoutVo abandon(Long userId, Long workoutId) {
+        RunWorkout workout = requireWorkout(userId, workoutId, true);
+        RunWorkoutStatus status = statusOf(workout);
+        if (status == RunWorkoutStatus.FAILED) {
+            return toVo(workout);
+        }
+        if (!status.isActive()) {
+            throw new ServiceException("只有未结束的运动可以放弃");
+        }
+
+        Date abandonedAt = new Date();
+        if (status == RunWorkoutStatus.PAUSED && workout.getPausedStartedAt() != null) {
+            workout.setPausedSeconds(safeAddSeconds(
+                workout.getPausedSeconds(), secondsBetween(workout.getPausedStartedAt(), abandonedAt)));
+            workout.setPausedStartedAt(null);
+        }
+        workout.setFinishedAt(abandonedAt);
+        workout.setElapsedSeconds(calculateElapsedSeconds(workout, abandonedAt));
+        workout.setAvgPaceSeconds(RunWorkoutCalculator.averagePaceSeconds(
+            workout.getElapsedSeconds(), workout.getDistanceMeters()));
+        workout.setStatus(RunWorkoutStatus.FAILED.name());
+        workout.setActiveFlag(null);
+        workout.setRankingEligible(false);
+        updateWorkout(workout, "放弃运动失败，请重试");
+        return toVo(workout);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public RunWorkoutVo finish(Long userId, Long workoutId, RunWorkoutFinishBo bo) {
         RunWorkout workout = requireWorkout(userId, workoutId, true);
         if (statusOf(workout) == RunWorkoutStatus.COMPLETED) {
@@ -462,8 +490,8 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
         }
         workout.setFinishedAt(finishedAt);
         workout.setElapsedSeconds(calculateElapsedSeconds(workout, finishedAt));
-        workout.setCaloriesKcal(calculateCalories(workout.getWeightKg(), workout.getDistanceMeters()));
-        workout.setAvgPaceSeconds(calculateAveragePace(workout.getElapsedSeconds(), workout.getDistanceMeters()));
+        workout.setCaloriesKcal(RunWorkoutCalculator.runningCalories(workout.getWeightKg(), workout.getDistanceMeters()));
+        workout.setAvgPaceSeconds(RunWorkoutCalculator.averagePaceSeconds(workout.getElapsedSeconds(), workout.getDistanceMeters()));
         workout.setFinishRequestId(bo.getClientFinishId());
         workout.setStatus(RunWorkoutStatus.COMPLETED.name());
         workout.setActiveFlag(null);
@@ -564,7 +592,7 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
             return TrackValidation.valid(ZERO_DISTANCE);
         }
 
-        double distance = haversineMeters(
+        double distance = RunWorkoutCalculator.haversineMeters(
             previousValid.getLatitude().doubleValue(),
             previousValid.getLongitude().doubleValue(),
             point.getLatitude().doubleValue(),
@@ -625,36 +653,6 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
         return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, elapsed));
     }
 
-    private BigDecimal calculateCalories(BigDecimal weightKg, BigDecimal distanceMeters) {
-        if (weightKg == null || distanceMeters == null || distanceMeters.signum() <= 0) {
-            return ZERO_DISTANCE;
-        }
-        return weightKg.multiply(distanceMeters)
-            .multiply(CALORIE_FACTOR)
-            .divide(BigDecimal.valueOf(1000L), 2, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal calculateMetCalories(BigDecimal weightKg,
-                                            BigDecimal metValue,
-                                            int durationMinutes) {
-        if (weightKg == null || metValue == null || durationMinutes <= 0) {
-            return ZERO_DISTANCE;
-        }
-        return metValue.multiply(weightKg)
-            .multiply(BigDecimal.valueOf(durationMinutes))
-            .divide(BigDecimal.valueOf(60L), 2, RoundingMode.HALF_UP);
-    }
-
-    private Integer calculateAveragePace(int elapsedSeconds, BigDecimal distanceMeters) {
-        if (distanceMeters == null || distanceMeters.compareTo(BigDecimal.TEN) < 0) {
-            return null;
-        }
-        return BigDecimal.valueOf(elapsedSeconds)
-            .multiply(BigDecimal.valueOf(1000L))
-            .divide(distanceMeters, 0, RoundingMode.HALF_UP)
-            .intValue();
-    }
-
     private long secondsBetween(Date start, Date end) {
         if (start == null || end == null) {
             return 0L;
@@ -665,15 +663,6 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
     private int safeAddSeconds(Integer current, long delta) {
         long total = (current == null ? 0L : current.longValue()) + Math.max(0L, delta);
         return (int) Math.min(Integer.MAX_VALUE, total);
-    }
-
-    private double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
-        double latDelta = Math.toRadians(lat2 - lat1);
-        double lngDelta = Math.toRadians(lng2 - lng1);
-        double a = Math.sin(latDelta / 2D) * Math.sin(latDelta / 2D)
-            + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-            * Math.sin(lngDelta / 2D) * Math.sin(lngDelta / 2D);
-        return EARTH_RADIUS_METERS * 2D * Math.atan2(Math.sqrt(a), Math.sqrt(1D - a));
     }
 
     private RunWorkoutVo toVo(RunWorkout workout) {
@@ -694,7 +683,7 @@ public class RunWorkoutServiceImpl implements IRunWorkoutService {
         vo.setDistanceMeters(workout.getDistanceMeters());
         vo.setCaloriesKcal(workout.getCaloriesKcal());
         vo.setAvgPaceSeconds(statusOf(workout).isActive()
-            ? calculateAveragePace(elapsed, workout.getDistanceMeters()) : workout.getAvgPaceSeconds());
+            ? RunWorkoutCalculator.averagePaceSeconds(elapsed, workout.getDistanceMeters()) : workout.getAvgPaceSeconds());
         vo.setWeightKg(workout.getWeightKg());
         vo.setCalorieAlgorithm(workout.getCalorieAlgorithm());
         vo.setMetValue(workout.getMetValue());

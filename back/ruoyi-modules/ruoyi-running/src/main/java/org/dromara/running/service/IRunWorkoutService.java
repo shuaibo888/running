@@ -39,5 +39,7 @@ public interface IRunWorkoutService {
 
     RunWorkoutVo resume(Long userId, Long workoutId);
 
+    RunWorkoutVo abandon(Long userId, Long workoutId);
+
     RunWorkoutVo finish(Long userId, Long workoutId, RunWorkoutFinishBo bo);
 }

@@ -1,5 +1,6 @@
 import { ACCESS_TOKEN_STORAGE_KEY } from './config.js'
 import { request } from './request.js'
+import { clearLocalSession, markSessionActive } from './session.js'
 
 function getWechatLoginCode() {
 	return new Promise((resolve, reject) => {
@@ -36,6 +37,7 @@ export async function wechatLogin(phoneCode) {
 		throw new Error('后端未返回有效登录令牌')
 	}
 	uni.setStorageSync(ACCESS_TOKEN_STORAGE_KEY, loginResult.accessToken)
+	markSessionActive()
 	return loginResult
 }
 
@@ -58,6 +60,7 @@ export async function phoneLogin(phone, code) {
 		throw new Error('后端未返回有效登录令牌')
 	}
 	uni.setStorageSync(ACCESS_TOKEN_STORAGE_KEY, loginResult.accessToken)
+	markSessionActive()
 	return loginResult
 }
 
@@ -74,7 +77,7 @@ export async function logout() {
 			method: 'POST'
 		})
 	} finally {
-		uni.removeStorageSync(ACCESS_TOKEN_STORAGE_KEY)
+		clearLocalSession()
 	}
 }
 
